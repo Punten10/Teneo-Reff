@@ -218,74 +218,111 @@ class TeneoAutoref:
         return result
 
     def get_verification_link(self, email, domain):
-        log_message(self.current_num, self.total, "Waiting for verification email...", "process")
         cookies = {
             'embx': f'[%22{email}%22]',
             'surl': f'{domain}/{email.split("@")[0]}'
         }
         headers = {'User-Agent': self.ua.random}
         
-        max_attempts = 5
+        max_attempts = 10
         for attempt in range(max_attempts):
-            log_message(self.current_num, self.total, f"Attempting to get verification link...", "process")
             response = self.make_request('GET', 'https://generator.email/inbox1/', headers=headers, cookies=cookies, timeout=60)
             
             if not response:
+                time.sleep(3)
                 continue
                 
             soup = BeautifulSoup(response.text, 'html.parser')
-            verify_link = soup.find('a', {'class': 'es-button'})
+            buttons = soup.find_all('a', class_='es-button')
             
-            if verify_link and 'verify' in verify_link.get('href', ''):
-                log_message(self.current_num, self.total, "Verification link found", "success")
-                return verify_link['href']
+            for button in buttons:
+                verify_url = button.get('href', '')
+                if 'node-b.teneo.pro/auth/v1/verify' in verify_url:
+                    # Ubah URL dari node-b ke dashboard
+                    new_url = verify_url.replace('node-b.teneo.pro/auth/v1/verify', 'dashboard.teneo.pro/auth/verify')
+                    # Hapus parameter redirect_to jika ada
+                    if 'redirect_to=' in new_url:
+                        new_url = new_url.split('redirect_to=')[0].rstrip('&')
+                    return new_url
+            
+            time.sleep(5)
 
-        log_message(self.current_num, self.total, "Could not find verification link", "error")
+        return None
+
+    def get_verification_link(self, email, domain):
+        self.logger.info(f"Starting verification link retrieval for email: {email} on domain: {domain}")
+        
+        cookies = {
+            'embx': f'[%22{email}%22]',
+            'surl': f'{domain}/{email.split("@")[0]}'
+        }
+        headers = {'User-Agent': self.ua.random}
+        
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            self.logger.debug(f"Attempt {attempt + 1}/{max_attempts} to get verification link")
+            
+            response = self.make_request('GET', 'https://generator.email/inbox1/', headers=headers, cookies=cookies, timeout=60)
+            
+            if not response:
+                self.logger.warning(f"No response received on attempt {attempt + 1}, retrying in 3 seconds")
+                time.sleep(3)
+                continue
+                
+            soup = BeautifulSoup(response.text, 'html.parser')
+            buttons = soup.find_all('a', class_='es-button')
+            
+            self.logger.debug(f"Found {len(buttons)} buttons with class 'es-button'")
+            
+            for button in buttons:
+                verify_url = button.get('href', '')
+                if 'node-b.teneo.pro/auth/v1/verify' in verify_url:
+                    self.logger.debug(f"Found original verification URL: {verify_url}")
+                    # Ubah URL dari node-b ke dashboard
+                    new_url = verify_url.replace('node-b.teneo.pro/auth/v1/verify', 'dashboard.teneo.pro/auth/verify')
+                    # Hapus parameter redirect_to jika ada
+                    if 'redirect_to=' in new_url:
+                        new_url = new_url.split('redirect_to=')[0].rstrip('&')
+                    self.logger.info(f"Successfully retrieved verification link: {new_url}")
+                    return new_url
+            
+            self.logger.debug(f"No verification link found on attempt {attempt + 1}, waiting 5 seconds before retry")
+            time.sleep(5)
+        
+        self.logger.error(f"Failed to get verification link after {max_attempts} attempts")
         return None
 
     def verify_email(self, verification_url):
-        log_message(self.current_num, self.total, "Verifying email...", "process")
-        response = self.make_request('GET', verification_url, headers={'User-Agent': self.ua.random}, timeout=60)
+        self.logger.info(f"Starting email verification process with URL: {verification_url}")
         
-        if not response:
-            return False
-            
-        success = 'Your email is verified' in response.text
-        
-        if success:
-            log_message(self.current_num, self.total, "Email verification successful", "success")
-        else:
-            log_message(self.current_num, self.total, "Email verification failed", "error")
-        return success
-
-    def login(self, email, password):
-        log_message(self.current_num, self.total, "Attempting login...", "process")
         headers = {
-            'accept': 'application/json, text/plain, */*',
-            'content-type': 'application/json',
-            'x-api-key': 'OwAG3kib1ivOJG4Y0OCZ8lJETa6ypvsDtGmdhcjA',
-            'user-agent': self.ua.random,
+            'User-Agent': self.ua.random,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
             'Origin': 'https://dashboard.teneo.pro',
             'Referer': 'https://dashboard.teneo.pro/'
         }
         
-        login_data = {
-            "email": email,
-            "password": password
-        }
-        
-        response = self.make_request('POST', 'https://auth.teneo.pro/api/login', headers=headers, json=login_data, timeout=120)
-                                   
-        if not response:
-            return {}
+        try:
+            self.logger.debug("Making verification request")
+            response = self.make_request('GET', verification_url, headers=headers, allow_redirects=True, timeout=60)
             
-        result = response.json()
-        
-        if "access_token" in result:
-            log_message(self.current_num, self.total, "Login successful", "success")
-        else:
-            log_message(self.current_num, self.total, "Login failed", "error")
-        return result
+            if not response:
+                self.logger.error("No response received from verification request")
+                return False
+                
+            if response.status_code in [200, 301, 302] and 'dashboard.teneo.pro' in response.url:
+                self.logger.info(f"Email verification successful. Status code: {response.status_code}")
+                return True
+                
+            self.logger.error(f"Email verification failed. Status code: {response.status_code}, URL: {response.url}")
+            return False
+            
+        except Exception as e:
+            self.logger.error(f"Exception during email verification: {str(e)}", exc_info=True)
+            return False
 
     def link_wallet(self, access_token, email):
         log_message(self.current_num, self.total, "Generating wallet and linking...", "process")
@@ -448,6 +485,7 @@ def main():
     banner = f"""
 {Fore.LIGHTCYAN_EX}╔═══════════════════════════════════════════╗
 ║            Teneo Autoreferral             ║
+║             Recode By Squiree             ║
 ║       https://github.com/im-hanzou        ║
 ╚═══════════════════════════════════════════╝{Style.RESET_ALL}
 """
