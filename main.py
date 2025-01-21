@@ -238,9 +238,7 @@ class TeneoAutoref:
             for button in buttons:
                 verify_url = button.get('href', '')
                 if 'node-b.teneo.pro/auth/v1/verify' in verify_url:
-                    # Ubah URL dari node-b ke dashboard
                     new_url = verify_url.replace('node-b.teneo.pro/auth/v1/verify', 'dashboard.teneo.pro/auth/verify')
-                    # Hapus parameter redirect_to jika ada
                     if 'redirect_to=' in new_url:
                         new_url = new_url.split('redirect_to=')[0].rstrip('&')
                     return new_url
