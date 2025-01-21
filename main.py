@@ -502,7 +502,7 @@ def main():
                 log_message(i+1, count, f"Password: {account['password']}", "success")
                 log_message(i+1, count, f"Wallet Address: {account['wallet_address']}", "success")
                 log_message(i+1, count, f"Points: 51000", "success")
-                log_message(i+1, count, f"{Fore.LIGHTRED_EX}Link Bot: https://github.com/Punten10/Teneo-Reff{Fore.RESET}", "success") 
+                log_message(i+1, count, f"{Fore.LIGHTRED_EX}Link Bot: https://github.com/Punten10/Teneo-BOT{Fore.RESET}", "success") 
                 log_message(i+1, count, f"{Fore.LIGHTRED_EX}Please ensure that all successfully referred accounts run teneo-bot{Fore.RESET}", "success")  
             else:
                 log_message(i+1, count, f"Failed: {message}", "error")
