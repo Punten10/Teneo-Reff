@@ -148,7 +148,7 @@ class TeneoAutoref:
         headers = {
             "accept": "application/json, text/plain, */*",
             "content-type": "application/json",
-            "x-api-key": "OwAG3kib1ivOJG4Y0OCZ8lJETa6ypvsDtGmdhcjA",
+            "x-api-key": "OwAG3kib1ivOJG4Y0OCZ8lJETa6ypvsDtGmdhcjB",
             "user-agent": self.ua.random,
             'Origin': 'https://dashboard.teneo.pro',
             'Referer': 'https://dashboard.teneo.pro/'
@@ -279,7 +279,7 @@ class TeneoAutoref:
         headers = {
             'accept': 'application/json, text/plain, */*',
             'content-type': 'application/json',
-            'x-api-key': 'OwAG3kib1ivOJG4Y0OCZ8lJETa6ypvsDtGmdhcjA',
+            'x-api-key': 'OwAG3kib1ivOJG4Y0OCZ8lJETa6ypvsDtGmdhcjB',
             'user-agent': self.ua.random,
             'Origin': 'https://dashboard.teneo.pro',
             'Referer': 'https://dashboard.teneo.pro/'
